@@ -49,6 +49,9 @@ async def main():
         except KeyboardInterrupt:
             return
 
+@app.on_event('startup')
+async def worker():
+    asyncio.run(main())
+
 if __name__=='__main__':
     uvicorn.run(app, host='0.0.0.0', port=int(os.getenv('PORT', 10000)))
-    asyncio.run(main())
