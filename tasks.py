@@ -15,7 +15,6 @@ from datetime import datetime
 import asyncio
 import os
 
-print(repr(os.getenv('REDIS_URL')),'dfdjfjdkfjdkfjkd')
 salt=bcrypt.gensalt()
 router=APIRouter()
 r=redis.from_url(str(os.getenv('REDIS_URL')))
@@ -46,7 +45,6 @@ async def update_worker(url):
 
 @router.get('/')
 async def login():
-    await r.ping()
     return FileResponse('templates/login.html')
 
 @router.get('/register')
@@ -90,7 +88,7 @@ async def refresh(db:AsyncSession=Depends(get_db), refresh_token=Cookie()):
     return response
 
 @router.get('/mainpage')
-async def mainpage(access_token=Cookie()):
+async def mainpage():
     return FileResponse('templates/mainpage.html')
 
 @router.get('/posts')
@@ -159,7 +157,7 @@ async def delete_post(id:int, access_token=Cookie(), db:AsyncSession=Depends(get
     await r.delete(f'{user.name}:schedule')
 
 @router.get('/message')
-async def message(access_token=Cookie()):
+async def message():
     return FileResponse('templates/messages.html')
 
 @router.get('/messages')
@@ -171,9 +169,6 @@ async def message_show(access_token=Cookie(), db:AsyncSession=Depends(get_db)):
     messages=(await db.execute(select(Message).filter(Message.user_id==user.id).options(selectinload(Message.post)).order_by(desc(Message.created_at)))).all()
     all_messages=[]
     for i in messages:
-        print(i[0].post.title,'gg')
         all_messages.append({'text':i[0].text, 'post_text':i[0].post.title, 'created_at':i[0].created_at})
     await r.setex(f'{user.name}:messages',60, json.dumps(all_messages))
-    print(messages)
-    print(all_messages)
     return {'messages': all_messages}
