@@ -6,3 +6,4 @@ aiosqlite
 asyncpg
 redis
 aio_pika
+python-jose[cryptography]
