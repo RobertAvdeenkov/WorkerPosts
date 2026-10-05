@@ -102,7 +102,7 @@ async def posts(access_token=Cookie(), db:AsyncSession=Depends(get_db)):
     select posts.id, users.name, posts.title, posts.publish_at
     from posts
     inner join users on posts.user_id=users.id
-    group by posts.id
+    group by posts.id, users.name
     HAVING posts.published=1
     ORDER by posts.publish_at DESC
     ''')
