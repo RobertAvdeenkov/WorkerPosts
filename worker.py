@@ -29,7 +29,7 @@ async def callback(message:pika.IncomingMessage):
 
             txt=''
             for i in body:
-                txt+=f'("Ваш пост был отправлен", {i[-1]}, {i[0]}),'
+                txt+=f'(\'Ваш пост был отправлен\', {i[-1]}, {i[0]}),'
 
             await db.execute(text(f'''
             INSERT INTO messages (text, user_id, post_id) values {txt[:-1:]}
