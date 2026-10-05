@@ -6,4 +6,5 @@ aiosqlite
 asyncpg
 redis
 aio_pika
+python-multipart
 python-jose[cryptography]
