@@ -19,8 +19,8 @@ salt=bcrypt.gensalt()
 router=APIRouter()
 r=redis.from_url(str(os.getenv('REDIS_URL')))
 
-async def update_worker():
-    connection= await pika.connect_robust(os.getenv('RABBITMQ_URL'))
+async def update_worker(url):
+    connection= await pika.connect_robust(os.getenv('RABBITMQ_URL',url))
     async with connection:
         channel=await connection.channel()
         queue=await channel.declare_queue('message_delayed')
