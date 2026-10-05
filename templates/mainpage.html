@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отложенные посты</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #0d0d0d;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .frame {
+            border: 10px solid #ffcc00;
+            padding: 12px 24px;
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1, h2, h3 {
+            color: #ffcc00;
+            margin: 10px 0;
+        }
+
+        .container {
+            background-color: #0d0d0d;
+            text-align: center;
+            min-width: 40%;
+            height: auto;
+            padding: 12px 12px;
+            border-radius: 0%;
+        }
+
+        .ots {
+            padding: 8px 12px;
+        }
+
+        button {
+            border-radius: 1%;
+            background-color: #ffcc00;
+            color: #000000;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #e6b800;
+        }
+
+        input, textarea {
+            color: #ffcc00;
+            background-color: #262626;
+            border: 1px solid #333;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            width: 90%;
+            margin-bottom: 10px;
+        }
+
+        a {
+            color: #ffcc00;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .post {
+            border: 1px solid #333;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: left;
+            background: #1a1a1a;
+            border-radius: 6px;
+        }
+
+        .post h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+        }
+
+        .post p {
+            color: #e0e0e0;
+            margin: 5px 0;
+        }
+
+        .post .meta {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .scheduled {
+            border-left: 3px solid #ff9800;
+        }
+
+        .published {
+            border-left: 3px solid #4caf50;
+        }
+
+        .logout {
+            margin-top: 20px;
+        }
+
+        .logout a {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="frame">
+        <h1>Отложенные посты</h1>
+        <a href="/message">Уведомления</a>
+        <h2>Создать пост</h2>
+
+        <div class="container">
+            <textarea id="postText" placeholder="Что у тебя на уме?" rows="3"></textarea>
+            <br>
+            <input type="datetime-local" id="publishAt">
+            <br>
+            <button onclick="createPost(false)">Опубликовать сейчас</button>
+            <button onclick="createPost(true)">Запланировать</button>
+        </div>
+
+        <div class="container">
+            <h3>Мои отложенные</h3>
+            <div id="scheduled">
+                <!-- Сюда будут подгружаться отложенные посты -->
+            </div>
+        </div>
+
+        <div class="container">
+            <h3>Лента</h3>
+            <div id="feed">
+                <!-- Сюда будут подгружаться опубликованные посты -->
+            </div>
+        </div>
+
+        <div class="logout">
+            <a href="/logout">Выйти</a>
+        </div>
+    </div>
+
+    <script>
+
+        async function fetchWithAuth(url, options = {}) {
+            let response = await fetch(url, options);
+            if (response.status === 401 || response.status ===422) {
+                const refreshResponse = await fetch('/refresh', { method: 'POST' });
+                console.log(refreshResponse.status)
+                if (refreshResponse.status!==401) {
+                    response = await fetch(url, options); // повторяем запрос
+                } else {
+                    window.location.href = '/'; // refresh тоже истёк
+                }
+            }
+            return response;
+        }
+
+        async function loadScheduled() {
+            const response = await fetchWithAuth('/posts/scheduled');
+            const data = await response.json();
+            const container = document.getElementById('scheduled');
+            container.innerHTML = '';
+
+            if (!data.posts || data.posts.length === 0) {
+                container.innerHTML = '<div class="post"><p>Нет отложенных постов</p></div>';
+                return;
+            }
+
+            data.posts.forEach(post => {
+                container.innerHTML += `
+                    <div class="post scheduled">
+                        <p>${post.text}</p>
+                        <div class="meta">Публикация: ${post.publish_at}</div>
+                        <button onclick="deletePost(${post.id})">Удалить</button>
+                    </div>
+                `;
+            });
+        }
+
+        async function loadFeed() {
+            const response = await fetchWithAuth('/posts');
+            const data = await response.json();
+            const feed = document.getElementById('feed');
+            feed.innerHTML = '';
+
+            if (!data.posts || data.posts.length === 0) {
+                feed.innerHTML = '<div class="post"><p>Постов пока нет</p></div>';
+                return;
+            }
+
+            data.posts.forEach(post => {
+                feed.innerHTML += `
+                    <div class="post published">
+                        <h3>${post.author}</h3>
+                        <p>${post.text}</p>
+                        <div class="meta">${post.published_at}</div>
+                    </div>
+                `;
+            });
+        }
+
+        async function createPost(scheduled) {
+            const text = document.getElementById('postText').value;
+            if (!text) return;
+
+            const body = { text: text };
+            if (scheduled) {
+                const publishAt = document.getElementById('publishAt').value;
+                if (!publishAt) {
+                    alert('Выберите дату публикации');
+                    return;
+                }
+                body.publish_at = publishAt;
+            }
+
+            await fetchWithAuth('/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            document.getElementById('postText').value = '';
+            document.getElementById('publishAt').value = '';
+            loadScheduled();
+            loadFeed();
+        }
+
+        async function deletePost(id) {
+            if (!confirm('Удалить пост?')) return;
+            await fetchWithAuth(`/posts/${id}`, { method: 'DELETE' });
+            loadScheduled();
+        }
+
+        // Загрузка при старте
+        loadScheduled();
+        loadFeed();
+    </script>
+</body>
+</html>
