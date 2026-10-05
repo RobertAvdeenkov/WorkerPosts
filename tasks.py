@@ -28,7 +28,7 @@ async def update_worker(url):
             async with SessionLocal() as db: #type:ignore
                 result=(await db.execute(text(f'''
                 select * from posts
-                where published=0 and publish_at<=\'{datetime.now()}\''
+                where published=0 and publish_at<=\'{datetime.now()}\'
                 '''))).all()
                 if result:
                     ids = [str(i[0]) for i in result]
