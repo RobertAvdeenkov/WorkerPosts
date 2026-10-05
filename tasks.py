@@ -119,7 +119,7 @@ async def sheduled_posts(access_token=Cookie(), db:AsyncSession=Depends(get_db))
     data=await r.get(f'{user.name}:schedule')
     if data:
         return {'posts':json.loads(data)}
-    result=(await db.execute(select(Post).filter(Post.user_id==user.id, Post.published==False))).all()
+    result=(await db.execute(select(Post).filter(Post.user_id==user.id, Post.published==0))).all()
     all_sheduled=[]
     for j in result:
         i=j[0]
@@ -132,12 +132,12 @@ async def create_post(access_token=Cookie(), db:AsyncSession=Depends(get_db), da
     user= await get_by_token(access_token)
     try:
         date=datetime.fromisoformat(data['publish_at'])
-        target=Post(title=data['text'], publish_at=date if date>datetime.now() else datetime.now(), user_id=user.id, published=False)
+        target=Post(title=data['text'], publish_at=date if date>datetime.now() else datetime.now(), user_id=user.id, published=0)
         db.add(target)
         await db.commit()
         await r.delete(f'{user.name}:schedule')
     except KeyError as e:
-        target=Post(user_id=user.id, title=data['text'], publish_at=datetime.now(), published=True)
+        target=Post(user_id=user.id, title=data['text'], publish_at=datetime.now(), published=1)
         db.add(target)
         await db.commit()
     finally:
@@ -150,7 +150,7 @@ async def delete_post(id:int, access_token=Cookie(), db:AsyncSession=Depends(get
     if not result:
         raise HTTPException(404,'Такого поста нет!')
     post=result[0]
-    if post.published==True:
+    if post.published==1:
         raise HTTPException(400,'Пост уже опубликован!')
     if post.user_id!=user.id:
         raise HTTPException(404,'Такого поста нет!')
