@@ -19,6 +19,7 @@ print(repr(os.getenv('REDIS_URL')),'dfdjfjdkfjdkfjkd')
 salt=bcrypt.gensalt()
 router=APIRouter()
 r=redis.from_url(str(os.getenv('REDIS_URL')))
+r.ping()
 
 async def update_worker(url):
     connection= await pika.connect_robust(os.getenv('RABBITMQ_URL',url))
