@@ -15,7 +15,7 @@ from datetime import datetime
 import asyncio
 import os
 
-print(str(os.getenv('REDIS_URL')),'dfdjfjdkfjdkfjkd')
+print(repr(os.getenv('REDIS_URL')),'dfdjfjdkfjdkfjkd')
 salt=bcrypt.gensalt()
 router=APIRouter()
 r=redis.from_url(str(os.getenv('REDIS_URL')))
