@@ -13,13 +13,14 @@ import json
 from sqlalchemy.orm import selectinload
 from datetime import datetime
 import asyncio
+import os
 
 salt=bcrypt.gensalt()
 router=APIRouter()
-r=redis.Redis()
+r=redis.from_url(str(os.getenv('REDIS_URL')))
 
 async def update_worker():
-    connection= await pika.connect_robust()
+    connection= await pika.connect_robust(os.getenv('RABBITMQ_URL'))
     async with connection:
         channel=await connection.channel()
         queue=await channel.declare_queue('message_delayed')

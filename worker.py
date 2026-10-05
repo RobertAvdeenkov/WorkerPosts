@@ -29,7 +29,7 @@ async def callback(message:pika.IncomingMessage):
             await db.commit()
 
 async def main():
-    connection= await pika.connect_robust()
+    connection= await pika.connect_robust(str(os.getenv('RABBITMQ_URL')))
     async with connection:
         channel=await connection.channel()
         queue=await channel.declare_queue('message_delayed')
