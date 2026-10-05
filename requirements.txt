@@ -1,5 +1,5 @@
 fastapi
-sqlalchemy
+sqlalchemy[asyncio]
 uvicorn[standard]
 bcrypt
 aiosqlite
