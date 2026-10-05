@@ -6,6 +6,14 @@ import redis.asyncio as redis
 from datetime import datetime
 import json
 import os
+from fastapi import FastAPI
+import uvicorn
+
+app = FastAPI()
+
+@app.get('/')
+async def health():
+    return {'status': 'ok'}
 
 r=redis.from_url(str(os.getenv('REDIS_URL')))
 
@@ -43,3 +51,4 @@ async def main():
 
 if __name__=='__main__':
     asyncio.run(main())
+    uvicorn.run(app, host='0.0.0.0', port=int(os.getenv('PORT', 10000)))
