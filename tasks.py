@@ -73,7 +73,7 @@ async def log(db:AsyncSession=Depends(get_db), name=Form(), password=Form()):
     refresh=create_token(user.name, timedelta=timedelta(days=30))
     response=RedirectResponse('/mainpage',status_code=303)
     response.set_cookie('access_token',create_token(user.name, timedelta=timedelta(minutes=30)))
-    response.set_cookie('refresh_token', refresh)
+    response.set_cookie('refresh_token', refresh, max_age=3600*24*30)
     user.refresh_token=refresh
     await db.commit()
     return response
@@ -172,3 +172,10 @@ async def message_show(access_token=Cookie(), db:AsyncSession=Depends(get_db)):
         all_messages.append({'text':i[0].text, 'post_text':i[0].post.title, 'created_at':i[0].created_at})
     await r.setex(f'{user.name}:messages',60, json.dumps(all_messages))
     return {'messages': all_messages}
+
+@router.get('/logout')
+async def logout():
+    response=RedirectResponse('/',status_code=303)
+    response.delete_cookie('access_token')
+    response.delete_cookie('refresh_token')
+    return response
